@@ -52,8 +52,8 @@ Aplikasi sekarang berjalan dan siap digunakan! Anda dapat:
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
-cd fastapi_template
+git clone https://github.com/x866bash/autoPen
+cd autoPen
 ```
 
 ### 2. Install Dependencies
