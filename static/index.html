@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automated Domain Security Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 40px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .scan-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .scans-list {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scan-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            border-left: 4px solid #4ecdc4;
+            transition: all 0.3s ease;
+        }
+
+        .scan-item:hover {
+            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .scan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .scan-domain {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .scan-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending { background: #ffa726; color: #000; }
+        .status-running { background: #42a5f5; color: #fff; }
+        .status-completed { background: #66bb6a; color: #fff; }
+        .status-failed { background: #ef5350; color: #fff; }
+
+        .scan-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            transition: width 0.3s ease;
+        }
+
+        .vulnerability-list {
+            margin-top: 15px;
+        }
+
+        .vulnerability-item {
+            background: rgba(239, 83, 80, 0.1);
+            border: 1px solid rgba(239, 83, 80, 0.3);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+        }
+
+        .vuln-type {
+            font-weight: 600;
+            color: #ef5350;
+        }
+
+        .vuln-severity {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .severity-high { background: #ef5350; color: white; }
+        .severity-medium { background: #ffa726; color: black; }
+        .severity-low { background: #66bb6a; color: white; }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #4ecdc4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .export-btn {
+            background: linear-gradient(45deg, #45b7d1, #96ceb4);
+            margin-left: 10px;
+        }
+
+        .delete-btn {
+            background: linear-gradient(45deg, #ef5350, #ff8a80);
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Domain Security Scanner</h1>
+            <p>Automated Pentesting Pipeline for Comprehensive Domain Vulnerability Detection</p>
+        </div>
+
+        <div class="scan-form">
+            <h2 style="margin-bottom: 20px; color: #4ecdc4;">🎯 Start New Scan</h2>
+            <form id="scanForm">
+                <div class="form-group">
+                    <label for="domain">Target Domain</label>
+                    <input type="text" id="domain" name="domain" placeholder="example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="scanType">Scan Type</label>
+                    <select id="scanType" name="scanType">
+                        <option value="full">🔍 Full Scan (Subdomain + Port + Vulnerability)</option>
+                        <option value="subdomain">🌐 Subdomain Enumeration Only</option>
+                        <option value="port">🔌 Port Scanning Only</option>
+                        <option value="vuln">⚠️ Vulnerability Scanning Only</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn" id="startScanBtn">🚀 Start Scan</button>
+            </form>
+        </div>
+
+        <div class="scans-list">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #4ecdc4;">📊 Scan Results</h2>
+                <button class="btn" onclick="refreshScans()">🔄 Refresh</button>
+            </div>
+            <div id="scansList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading scans...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let scans = [];
+        let refreshInterval;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            refreshScans();
+            startAutoRefresh();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('scanForm').addEventListener('submit', handleScanSubmit);
+        }
+
+        async function handleScanSubmit(e) {
+            e.preventDefault();
+            
+            const domain = document.getElementById('domain').value.trim();
+            const scanType = document.getElementById('scanType').value;
+            const submitBtn = document.getElementById('startScanBtn');
+            
+            if (!domain) {
+                alert('Please enter a domain name');
+                return;
+            }
+
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🚀 Starting Scan...';
+
+            try {
+                const response = await fetch(`${API_BASE}/scan/scans`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        target_domain: domain,
+                        scan_type: scanType
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                // Clear form
+                document.getElementById('domain').value = '';
+                
+                // Refresh scans list
+                await refreshScans();
+                
+                alert(`Scan started successfully! Scan ID: ${result.id}`);
+                
+            } catch (error) {
+                console.error('Error starting scan:', error);
+                alert('Failed to start scan. Please try again.');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Start Scan';
+            }
+        }
+
+        async function refreshScans() {
+            try {
+                const response = await fetch(`${API_BASE}/scan/scans`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                scans = await response.json();
+                
+                // Get status for running scans
+                for (let scan of scans) {
+                    if (scan.status === 'running') {
+                        try {
+                            const statusResponse = await fetch(`${API_BASE}/scan/scans/${scan.id}/status`);
+                            if (statusResponse.ok) {
+                                const status = await statusResponse.json();
+                                scan.progress = status.progress;
+                                scan.current_phase = status.current_phase;
+                                scan.status_message = status.message;
+                            }
+                        } catch (error) {
+                            console.error(`Error getting status for scan ${scan.id}:`, error);
+                        }
+                    }
+                }
+                
+                renderScans();
+            } catch (error) {
+                console.error('Error fetching scans:', error);
+                document.getElementById('scansList').innerHTML = '<p>Error loading scans. Please refresh the page.</p>';
+            }
+        }
+
+        function renderScans() {
+            const scansList = document.getElementById('scansList');
+            
+            if (scans.length === 0) {
+                scansList.innerHTML = '<p style="text-align: center; opacity: 0.7;">No scans found. Start your first scan above!</p>';
+                return;
+            }
+
+            // Sort scans by ID (newest first)
+            const sortedScans = [...scans].sort((a, b) => b.id - a.id);
+
+            scansList.innerHTML = sortedScans.map(scan => renderScanItem(scan)).join('');
+        }
+
+        function renderScanItem(scan) {
+            const statusClass = `status-${scan.status}`;
+            const results = scan.results || {};
+            
+            let progressBar = '';
+            if (scan.status === 'running') {
+                const progress = scan.progress || 0;
+                progressBar = `
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">${scan.status_message || 'Processing...'}</p>
+                `;
+            }
+
+            let vulnerabilities = '';
+            if (results.vulnerabilities && results.vulnerabilities.length > 0) {
+                vulnerabilities = `
+                    <div class="vulnerability-list">
+                        <h4 style="color: #ef5350; margin-bottom: 10px;">⚠️ Vulnerabilities Found:</h4>
+                        ${results.vulnerabilities.slice(0, 5).map(vuln => `
+                            <div class="vulnerability-item">
+                                <span class="vuln-type">${vuln.vulnerability_type || 'Security Issue'}</span>
+                                <span class="vuln-severity severity-${(vuln.severity || 'medium').toLowerCase()}">${vuln.severity || 'Medium'}</span>
+                                <p style="margin-top: 5px; font-size: 0.9rem;">${vuln.description || 'No description available'}</p>
+                                <p style="font-size: 0.8rem; opacity: 0.7;">Target: ${vuln.target}</p>
+                            </div>
+                        `).join('')}
+                        ${results.vulnerabilities.length > 5 ? `<p style="opacity: 0.7;">... and ${results.vulnerabilities.length - 5} more</p>` : ''}
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="scan-item">
+                    <div class="scan-header">
+                        <div class="scan-domain">🎯 ${scan.target_domain}</div>
+                        <div>
+                            <span class="scan-status ${statusClass}">${scan.status}</span>
+                            ${scan.status === 'completed' ? `<button class="btn export-btn" onclick="exportResults(${scan.id})">📥 Export</button>` : ''}
+                            <button class="btn delete-btn" onclick="deleteScan(${scan.id})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                    
+                    ${progressBar}
+                    
+                    <div class="scan-details">
+                        <div class="detail-item">
+                            <div class="detail-label">Scan ID</div>
+                            <div class="detail-value">#${scan.id}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Scan Type</div>
+                            <div class="detail-value">${scan.scan_type.toUpperCase()}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Created</div>
+                            <div class="detail-value">${new Date(scan.created_at).toLocaleString()}</div>
+                        </div>
+                        ${results.summary ? `
+                            <div class="detail-item">
+                                <div class="detail-label">Subdomains Found</div>
+                                <div class="detail-value">${results.summary.total_subdomains || 0}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Open Ports</div>
+                                <div class="detail-value">${results.summary.targets_with_open_ports || 0}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Vulnerabilities</div>
+                                <div class="detail-value" style="color: ${results.summary.total_vulnerabilities > 0 ? '#ef5350' : '#66bb6a'}">${results.summary.total_vulnerabilities || 0}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${vulnerabilities}
+                    
+                    ${scan.error_message ? `<div style="color: #ef5350; margin-top: 10px; padding: 10px; background: rgba(239, 83, 80, 0.1); border-radius: 8px;">❌ Error: ${scan.error_message}</div>` : ''}
+                </div>
+            `;
+        }
+
+        async function deleteScan(scanId) {
+            if (!confirm('Are you sure you want to delete this scan?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/scan/scans/${scanId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                await refreshScans();
+            } catch (error) {
+                console.error('Error deleting scan:', error);
+                alert('Failed to delete scan. Please try again.');
+            }
+        }
+
+        function exportResults(scanId) {
+            const scan = scans.find(s => s.id === scanId);
+            if (!scan || !scan.results) {
+                alert('No results available for export');
+                return;
+            }
+
+            const dataStr = JSON.stringify(scan.results, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `scan_${scanId}_${scan.target_domain}_results.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function startAutoRefresh() {
+            // Refresh every 5 seconds if there are running scans
+            refreshInterval = setInterval(() => {
+                const hasRunningScans = scans.some(scan => scan.status === 'running');
+                if (hasRunningScans) {
+                    refreshScans();
+                }
+            }, 5000);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        });
+    </script>
+</body>
+</html>
